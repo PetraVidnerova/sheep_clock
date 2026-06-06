@@ -55,24 +55,27 @@ def phrase_for(now: datetime) -> str:
 # ---------- GUI ----------
 
 POLL_MS = 30_000
-MARGIN = 32
+TOP_OFFSET = 48
 FONT_SPEC = ("Serif", 32, "italic")
-FG_COLOR = "#f5f0e6"
-BG_COLOR = "#101014"
-ALPHA = 0.78
+FG_COLOR = "#000000"
+# Sampled from wallpaper at the widget's location; fake-transparent on
+# Mt. Fuji background. Update when changing wallpaper.
+BG_COLOR = "#af9f94"
+ALPHA = 1.0
 
 
 class WordsClock:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("time-in-words")
-        self.root.overrideredirect(True)
         self.root.protocol("WM_DELETE_WINDOW", self.root.destroy)
         self._drag_origin: tuple[int, int] | None = None
 
-        # Best-effort: behave as a desktop-layer widget on X11. Silently
-        # fall back to a regular borderless window if the WM doesn't support
-        # the attribute (e.g. Wayland, macOS, Windows).
+        # Request the WM to treat us as desktop content: no decorations,
+        # placed on the desktop layer (BELOW normal windows). Must be set
+        # BEFORE the window is mapped so the WM picks it up. We let the WM
+        # manage the window (no overrideredirect) — otherwise the WM is
+        # bypassed and the window ends up always-on-top.
         for attr, value in (("-type", "desktop"), ("-alpha", ALPHA)):
             try:
                 self.root.wm_attributes(attr, value)
@@ -93,17 +96,24 @@ class WordsClock:
         )
         self.label.pack()
 
-        self._place_top_right()
+        self._place_top_center()
         self._bind_controls()
         self.root.lower()
 
-    def _place_top_right(self) -> None:
+    def _place_top_center(self) -> None:
+        # Force mapping so we can read the actual rendered width, not just
+        # the requested width (which may be a placeholder before mapping).
         self.root.update_idletasks()
-        w = self.root.winfo_reqwidth()
+        self.root.update()
+        w = self.root.winfo_width()
         screen_w = self.root.winfo_screenwidth()
-        x = screen_w - w - MARGIN
-        y = MARGIN
+        x = (screen_w - w) // 2
+        y = TOP_OFFSET
         self.root.geometry(f"+{x}+{y}")
+        # On Wayland/XWayland the compositor sometimes ignores the first
+        # position request for override-redirect windows. Re-issue once the
+        # window is fully realized; harmless on X11 / other platforms.
+        self.root.after(50, lambda: self.root.geometry(f"+{x}+{y}"))
 
     def _bind_controls(self) -> None:
         for widget in (self.root, self.label):
