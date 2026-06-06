@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.DS_Store
+
+# Local tooling — not part of the project deliverable
+.claude/
+_bmad/
+_bmad-output/
