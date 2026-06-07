@@ -4,6 +4,8 @@ A minimal desktop widget that tells the time as a *phrase* rather than digits â€
 `dawn`, `late morning`, `noon`, `dusk`, `night` â€” paired with a matching icon.
 It sits on the desktop layer, Conky-style, behind your normal windows.
 
+<img src="screenshot.png" width=90%/>
+
 ## How it works
 
 The day is divided into named phases. The widget shows the phase that currently
