@@ -88,7 +88,7 @@ def _load_phrase_image(label: str) -> tk.PhotoImage | None:
 POLL_MS = 30_000
 TOP_OFFSET = 48
 FONT_SPEC = ("Serif", 32, "italic")
-IMG_HEIGHT = 100
+IMG_HEIGHT = 120
 IMG_RIGHT_GAP = 16  # transparent padding baked into each icon so the text
                     # doesn't sit flush against the image
 IMG_DIR = Path(__file__).parent / "imgs"
