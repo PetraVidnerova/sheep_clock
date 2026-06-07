@@ -4,8 +4,6 @@ A minimal desktop widget that tells the time as a *phrase* rather than digits �
 `dawn`, `late morning`, `noon`, `dusk`, `night` — paired with a matching icon.
 It sits on the desktop layer, Conky-style, behind your normal windows.
 
-> _Screenshot: place an image here, e.g._ `imgs/screenshot.png`
-
 ## How it works
 
 The day is divided into named phases. The widget shows the phase that currently
@@ -54,13 +52,6 @@ To run it detached at login, add it to your WM/desktop autostart, e.g.:
 nohup python3 /path/to/time_in_words.py >/dev/null 2>&1 &
 ```
 
-### Controls
-
-| Action            | Effect                          |
-|-------------------|---------------------------------|
-| Left-click + drag | Move the widget                 |
-| Right-click       | Quit                            |
-| `Esc` / `Ctrl+Q`  | Quit (recovery if dragged off-screen) |
 
 The widget is clamped to the screen edges so it can't be dragged fully out of
 view and lost.
@@ -90,5 +81,4 @@ underscores (e.g. `early morning` → `imgs/early_morning.png`).
 ```
 time_in_words.py    the widget (single file)
 imgs/               one PNG per phrase
-docs/               additional documentation
 ```
