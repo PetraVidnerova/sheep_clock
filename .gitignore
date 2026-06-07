@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+nohup.out
 
 # Local tooling — not part of the project deliverable
 .claude/

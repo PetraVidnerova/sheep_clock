@@ -7,10 +7,15 @@ _NET_WM_WINDOW_TYPE_DESKTOP. Drag with left mouse, right-click to quit.
 
 from __future__ import annotations
 
+import base64
+import io
 import sys
 import tkinter as tk
 from dataclasses import dataclass
 from datetime import datetime, time
+from pathlib import Path
+
+from PIL import Image
 
 
 @dataclass(frozen=True)
@@ -52,11 +57,41 @@ def phrase_for(now: datetime) -> str:
     return selected
 
 
+def _load_phrase_image(label: str) -> tk.PhotoImage | None:
+    """Load and scale the icon for a phrase. Returns None if missing/broken."""
+    path = IMG_DIR / f"{label.replace(' ', '_')}.png"
+    try:
+        img = Image.open(path)
+    except (FileNotFoundError, OSError):
+        return None
+    scale = IMG_HEIGHT / img.height
+    resized = img.resize(
+        (int(img.width * scale), IMG_HEIGHT), Image.LANCZOS
+    ).convert("RGBA")
+    # Extend the canvas with a transparent strip on the right; Tk composites
+    # this against the label's bg so it reads as space between image and text.
+    padded = Image.new(
+        "RGBA",
+        (resized.width + IMG_RIGHT_GAP, IMG_HEIGHT),
+        (0, 0, 0, 0),
+    )
+    padded.paste(resized, (0, 0))
+    # Avoid PIL.ImageTk (split into a separate Debian package). Tk 8.6+
+    # accepts base64-encoded PNG bytes directly.
+    buf = io.BytesIO()
+    padded.save(buf, format="PNG")
+    return tk.PhotoImage(data=base64.b64encode(buf.getvalue()))
+
+
 # ---------- GUI ----------
 
 POLL_MS = 30_000
 TOP_OFFSET = 48
 FONT_SPEC = ("Serif", 32, "italic")
+IMG_HEIGHT = 100
+IMG_RIGHT_GAP = 16  # transparent padding baked into each icon so the text
+                    # doesn't sit flush against the image
+IMG_DIR = Path(__file__).parent / "imgs"
 FG_COLOR = "#000000"
 # Sampled from wallpaper at the widget's location; fake-transparent on
 # Mt. Fuji background. Update when changing wallpaper.
@@ -84,17 +119,25 @@ class WordsClock:
 
         self.root.configure(bg=BG_COLOR)
 
+        # Preload one image per phrase; missing files map to None so the
+        # label falls back to text-only. Stored on the instance so Tk's
+        # reference is kept alive (otherwise the image goes blank).
+        self._images: dict[str, tk.PhotoImage | None] = {
+            label: _load_phrase_image(label)
+            for label in {p.label for p in PHASES}
+        }
+
         self._current_phrase = phrase_for(datetime.now())
         self.label = tk.Label(
             self.root,
             text=self._current_phrase,
+            image=self._images.get(self._current_phrase),
+            compound=tk.LEFT,
             font=FONT_SPEC,
             fg=FG_COLOR,
             bg=BG_COLOR,
-            padx=24,
-            pady=12,
         )
-        self.label.pack()
+        self.label.pack(padx=(0, 24), pady=0)
 
         self._place_top_center()
         self._bind_controls()
@@ -151,7 +194,8 @@ class WordsClock:
         new_phrase = phrase_for(datetime.now())
         if new_phrase != self._current_phrase:
             self._current_phrase = new_phrase
-            self.label.config(text=new_phrase)
+            self.label.config(text=new_phrase,
+                              image=self._images.get(new_phrase))
         # Re-lower on each tick so the widget stays behind other windows on WMs
         # that don't honor _NET_WM_WINDOW_TYPE_DESKTOP.
         self.root.lower()
